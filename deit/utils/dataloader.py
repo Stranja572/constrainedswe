@@ -25,7 +25,7 @@ def get_dataloaders(data_dir: str,  batch_size: int, num_workers: int, val_split
         transforms.RandomResizedCrop(img_size, scale=(0.08, 1.0),
                                      interpolation=InterpolationMode.BICUBIC),
         transforms.RandomHorizontalFlip(),
-        # Secondary: exactly one of {Grayscale, Solarize, Blur}
+        # Secondary
         transforms.RandomChoice([
             transforms.RandomGrayscale(p=1.0),
             transforms.Lambda(lambda img: ImageOps.solarize(img, threshold=128)),
@@ -42,7 +42,7 @@ def get_dataloaders(data_dir: str,  batch_size: int, num_workers: int, val_split
                              std =[0.229, 0.224, 0.225]),
     ])
 
-    # === Validation / test transform
+    # Validation / test transform
     val_transform = transforms.Compose([
         transforms.Resize(256, interpolation=InterpolationMode.BICUBIC),
         transforms.CenterCrop(img_size),
@@ -51,7 +51,7 @@ def get_dataloaders(data_dir: str,  batch_size: int, num_workers: int, val_split
                              std =[0.229, 0.224, 0.225]),
     ])
 
-    # --- Load and split the training folder
+    # Load and split the training folder
     train_dir = os.path.join(data_dir, 'train')
     full_train = ImageFolder(train_dir, transform=train_transform)
     total = len(full_train)

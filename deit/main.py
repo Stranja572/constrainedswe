@@ -28,7 +28,6 @@ def parse_args():
     parser.add_argument("--run_name", type=str, default=None, help="W&B run name")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for dataset split and training")
     parser.add_argument("--val_split", type=float, default=0.1,  help="Fraction of train set to use for validation split")
-    parser.add_argument("--output_dir",    type=str, default="./checkpoints_real")
     parser.add_argument("--layer_stop",    type=int, default=11)
     parser.add_argument("--embedding",    type=str, default="flatten")
     parser.add_argument("--parallel", type=lambda x: x.lower() in ['true','1','yes'], default=True)
@@ -66,7 +65,7 @@ def main():
         assert args.wandb_key, "--wandb_key is required when --wandb is set"
         wandb.login(key=args.wandb_key)
         wandb.init(
-            project="imagenet-tiny-real",
+            project="imagenet-tiny",
             entity="constrained-swe",
             name=fname,
             config=vars(args)

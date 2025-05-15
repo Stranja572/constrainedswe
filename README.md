@@ -29,6 +29,7 @@ Run the experiment with the following command from the `deit` directory:
 
 ```bash
 python -u main.py \
+--data_dir <dataset_directory_path>
 --classification <classification> \
 --batch_size <batch_size> \
 --epochs <epochs> \
