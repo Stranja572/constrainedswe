@@ -1,3 +1,4 @@
 __pycache__
 deit/run
 /modelnet
+.DS_Store

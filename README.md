@@ -23,7 +23,7 @@ Download Tiny ImageNet with the following command:
 wget http://cs231n.stanford.edu/tiny-imagenet-200.zip
 ```
 
-For compatability with our code, restructure the validation set (which is used as the test set) by placing images into subdirectories representing their respective classes.
+For compatability with our code, restructure the validation set (which is used as the test set) by placing images into subdirectories representing their respective classes. 
 
 Run the experiment with the following command from the `deit` directory:
 
@@ -47,7 +47,23 @@ python -u main.py \
 Additional command arguments can be found in `main.py`.
 
 ### Point Cloud Classification with Point Cloud Transformers (PCTs)
-    
 
 ### Subcellular Localization with Protein Language Models (PLMs) 
+
+The `download_data.py` script can be used to download the dataset for the experiments into a new folder called `datasets` by running
+
+```bash
+python download_data.py --to datasets --benchmarks scl
+```
+
+The following command can be used to run the numerical experiments in the paper. The hyperparameters, such as the number of points in the reference set and the pre-trained PLM backbone, can be adjusted via command-line parameters, as well as the configuration files under `config`.
+
+```bash
+python run_scl.py --config config/scl_esm2.yaml --pooling swe --num-ref-points 100 --target-model-type esm2_t6_8M_UR50D
+```
+
+**NOTE:** The first training epoch might take longer than usual because it creates all the required interpolation matrices for SWE corresponding to different seequence lengths in the dataset. Once that is done, the following epochs will be much faster.
+    
+
+
    
