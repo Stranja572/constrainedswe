@@ -48,6 +48,15 @@ Additional command arguments can be found in `main.py`.
 
 ### Point Cloud Classification with Point Cloud Transformers (PCTs)
 
+Use the `download_ModelNet40.py.` and `ModelNet40_data.py` scripts to download and preprocess the data. 
+
+Then, run the following command from the `modelnet` directory:
+
+```bash
+python train.py
+```
+
+
 ### Subcellular Localization with Protein Language Models (PLMs) 
 
 The `download_data.py` script can be used to download the dataset for the experiments into a new folder called `datasets` by running
