@@ -56,7 +56,7 @@ The `download_data.py` script can be used to download the dataset for the experi
 python download_data.py --to datasets --benchmarks scl
 ```
 
-The following command can be used to run the numerical experiments in the paper. The hyperparameters, such as the number of points in the reference set and the pre-trained PLM backbone, can be adjusted via command-line parameters, as well as the configuration files under `config`.
+The hyperparameters, such as the number of points in the reference set and the pre-trained PLM backbone, can be adjusted via command-line parameters, as well as the configuration files under `config`. To run the experiment, use the following command from the `plm` directory: 
 
 ```bash
 python run_scl.py --config config/scl_esm2.yaml --pooling swe --num-ref-points 100 --target-model-type esm2_t6_8M_UR50D

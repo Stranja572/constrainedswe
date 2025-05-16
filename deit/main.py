@@ -49,7 +49,7 @@ def main():
     if args.classification == "swe" or args.classification == "cls":
         args.epsilon = 10000
     
-    if args.classification != "cls":
+    if args.classification == "swe" or args.classification == "constrained_swe":
         fname = f"deit_tiny_{args.classification}_seed{args.seed}_epsilon_{args.epsilon}_{args.batch_size}_alpha{args.alpha}__duallr{args.dual_lr}_tau{args.tau_softsort}_{args.num_projections}slices"
     else:
         fname = f"deit_tiny_{args.classification}_seed{args.seed}_bs{args.batch_size}"
