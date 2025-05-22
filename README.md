@@ -23,7 +23,7 @@ Download Tiny ImageNet with the following command:
 wget http://cs231n.stanford.edu/tiny-imagenet-200.zip
 ```
 
-For compatability with our code, restructure the validation set (which is used as the test set) by placing images into subdirectories representing their respective classes. 
+Then, run `organize_val.py` to reorganize the validation set (which is used as the test set) so that the images are in subdirectories of their respective classes. 
 
 Run the experiment with the following command from the `deit` directory:
 
