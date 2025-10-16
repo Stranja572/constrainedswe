@@ -9,7 +9,11 @@ from model import ConstrainedDeiT
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--data_dir", type=str, default = "None")
+    #parser.add_argument("--    #parser.add_argument("--data_dir", type=str, default = "/hpc/group/naderilab/darian/ConstrainedSWE/deit/tiny-imagenet/tiny-imagenet-200") is this correct?
+    #default = "/hpc/group/naderilab/darian/ConstrainedSWE/deit/tiny-imagenet-200")
+    #Tiny-Imagenet or DomainNet clipart, both do 90-10 split to get train/val
+    parser.add_argument("--dataset", type=str, default = "tinyimage")
+    
     parser.add_argument("--num_classes", type=int, default=200) #Imagenet has 200 classes
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--classification", type=str, default="constrained_swe")
@@ -20,17 +24,21 @@ def parse_args():
     parser.add_argument("--dual_lr", type=float, default=0.01, help="ηλ: dual variable step size")
     parser.add_argument("--alpha", type=float, default=0.1, help="Slack regularization coefficient α")
     parser.add_argument("--epsilon", type=float, default=0.05, help="Constraint tolerance vector ϵ")
-    parser.add_argument("--num_ref_points", type=int, default=196, help="Number of reference points in SWE") #196 ref points -> no interpolation
+    parser.add_argument("--num_ref_points", type=int, default=16, help="Number of reference points in SWE") #196 ref points -> no interpolation
     parser.add_argument("--num_projections", type=int, default=8, help="Number of projections in SWE")
     parser.add_argument("--tau_softsort", type=float, default=1e-2)
     parser.add_argument("--wandb", type=lambda x: x.lower() in ['true','1','yes'], default=False, help="Enable Weights & Biases logging (True or False)")
-    parser.add_argument("--wandb_key", type=str, default="None", help="W&B API key") #must add wandb key
+    parser.add_argument("--wandb_key", type=str, default="fc95022481d3499dbe0bafe07f67dc1c29b29dcf", help="W&B API key")
     parser.add_argument("--run_name", type=str, default=None, help="W&B run name")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for dataset split and training")
     parser.add_argument("--val_split", type=float, default=0.1,  help="Fraction of train set to use for validation split")
+    parser.add_argument("--output_dir",    type=str, default="./checkpoints_real")
     parser.add_argument("--layer_stop",    type=int, default=11)
     parser.add_argument("--embedding",    type=str, default="flatten")
     parser.add_argument("--parallel", type=lambda x: x.lower() in ['true','1','yes'], default=True)
+
+
+
 
     return parser.parse_args()
 
@@ -65,7 +73,7 @@ def main():
         assert args.wandb_key, "--wandb_key is required when --wandb is set"
         wandb.login(key=args.wandb_key)
         wandb.init(
-            project="imagenet-tiny",
+            project="clipart-real",
             entity="constrained-swe",
             name=fname,
             config=vars(args)
@@ -73,11 +81,14 @@ def main():
         time.sleep(5)
 
     train_loader, val_loader, test_loader = get_dataloaders(
-        data_dir=args.data_dir,
+        dataset=args.dataset,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         val_split=args.val_split
     )
+
+    if args.dataset == "clipart":
+        args.num_classes = 345
 
     model = ConstrainedDeiT(
         num_classes=args.num_classes,

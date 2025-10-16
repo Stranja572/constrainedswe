@@ -1,10 +1,16 @@
+
+import os
+import pickle as pk
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import math
-# from torchinterp1d import Interp1d
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
+import contextlib
 
+############################
+# SWE Pooling Architecture #
+############################
 
 class Interp1d(torch.autograd.Function):
     def __call__(self, x, y, xnew, out=None):
@@ -166,29 +172,9 @@ class Interp1d(torch.autograd.Function):
                 pos += 1
         return (*result,)
 
-class SoftSort_p2(torch.nn.Module):
-    def __init__(self, tau=1.0):#, hard=False):
-        super(SoftSort_p2, self).__init__()
-        # self.hard = hard
-        self.tau = tau
 
-    def forward(self, scores):
-        """
-        scores: elements to be sorted. Typical shape: batch_size x n
-        """
-        scores = scores.unsqueeze(-1)
-        sorted_ = scores.sort(descending=True, dim=1)[0]
-        pairwise_diff = ((scores.transpose(1, 2) - sorted_) ** 2).neg() / self.tau
-        P_hat = pairwise_diff.softmax(-1)
-
-        # if self.hard:
-        #     P = torch.zeros_like(P_hat, device=P_hat.device)
-        #     P.scatter_(-1, P_hat.topk(1, -1)[1], value=1)
-        #     P_hat = (P - P_hat).detach() + P_hat
-        return P_hat
-
-class ConstrainedSWE(nn.Module):
-    def __init__(self, d_in, num_ref_points, num_projections, tau_softsort=1, embedding = "flatten", parallel = True):
+class SWE_Pooling(nn.Module):
+    def __init__(self, d_in, num_ref_points, num_projections):
         '''
         The PSWE module that produces fixed-dimensional permutation-invariant embeddings for input sets of arbitrary size.
         Inputs:
@@ -196,7 +182,7 @@ class ConstrainedSWE(nn.Module):
             num_ref_points: Number of points in the reference set
             num_projections: Number of slices
         '''
-        super(ConstrainedSWE, self).__init__()
+        super(SWE_Pooling, self).__init__()
         self.d_in = d_in
         self.num_ref_points = num_ref_points
         self.num_projections = num_projections
@@ -210,25 +196,13 @@ class ConstrainedSWE(nn.Module):
             nn.init.eye_(self.theta.weight_v)
         else:
             nn.init.normal_(self.theta.weight_v)
+            
         self.theta.weight_g.data = torch.ones_like(self.theta.weight_g.data, requires_grad=False)
         self.theta.weight_g.requires_grad = False
 
         # weights to reduce the output embedding dimensionality
         self.weight = nn.Parameter(torch.zeros(num_projections, num_ref_points))
         nn.init.xavier_uniform_(self.weight)
-
-        self.softsort = SoftSort_p2(tau=tau_softsort)
-
-        self.map = None
-
-        self.parallel = parallel
-
-        self.embedding = embedding
-
-        if self.embedding == "mapM":
-            self.map = nn.Linear(num_projections,1)
-        elif self.embedding == "mapL":
-            self.map = nn.Linear(num_ref_points,1) #L x M -> L
 
     def forward(self, X):
         '''
@@ -260,86 +234,15 @@ class ConstrainedSWE(nn.Module):
         Rslices = self.get_slice(self.reference).expand(Xslices_sorted_interpolated.shape) #We also slice the reference here
 
         _, Rind = torch.sort(Rslices, dim=1)
-        embeddings = (Rslices - torch.gather(Xslices_sorted_interpolated, dim=1, index=Rind)).permute(0, 2, 1) #B x L x M
-
-        if self.embedding == "flatten":
-            embeddings = embeddings.reshape(B, -1) #B x LM; view requires contiguous
-        elif self.embedding == "mapM":
-            embeddings = embeddings.transpose(2,1) #B x M x L; transpose arguments are symmetric it just swaps the dimensions 
-            embeddings = self.map(embeddings) #B x M x 1
-            embeddings = embeddings.squeeze(2) #B x M
-        elif self.embedding == "mapL":
-            # embeddings = self.map(embeddings) #B x L x 1
-            # embeddings = embeddings.squeeze(2) #B x L
-
-            #Possibly faster? GPU not optimized for M->1 (skinny linear layer matrix is bad)
-            w = self.map.weight.view(-1)              # shape: (M,)
-            b = self.map.bias                          # shape: (1,)
-            embeddings = torch.einsum('blm,m->bl', embeddings, w) + b 
-
-        elif self.embedding == "meanL": #PyTorch automatically gets rid of the singleton dimension for mean
-            embeddings = embeddings.mean(dim=2) #mean along dimension M; B x L
-        elif self.embedding == "meanM":
-            embeddings = embeddings.mean(dim=1) #mean along dimension L; B x M
+        embeddings = (Rslices - torch.gather(Xslices_sorted_interpolated, dim=1, index=Rind)).permute(0, 2, 1)
         
-        sliced_X = Xslices_sorted_interpolated if M != N else Xslices_sorted
-        ref_expanded = self.reference.unsqueeze(0).repeat(B, 1, 1)     # [B×M×D] vs B x N x D
-        cost         = torch.cdist(X, ref_expanded, p=2)              # [B×N×N], when M=N?
-
-        if self.parallel == False:
-
-            per_slice_distances = []
-
-            #For one slice, our dist_l is the mean of the SWGG cost going from reference slice distribution to the N token distribution (of one sample) for all samples
-            #Basically we are minimizing the average SWGG per slice (across a mini batch), not looking at it per sample
-            for l in range(self.num_projections):
-                x_slice = sliced_X[:, :, l] # B×N
-                r_slice = Rslices[:, :, l] # B×M
-                #print(f"[slice {l}] x_slice: {x_slice.shape}, r_slice: {r_slice.shape}")
-
-                ss_x = self.softsort(x_slice)
-                ss_r = self.softsort(r_slice)
-                #print(f"[slice {l}] ss_x: {ss_x.shape}, ss_r: {ss_r.shape}")
-
-                plan = torch.matmul(ss_x.transpose(-1, -2), ss_r) / N # B x N x N, B different transport plans; 1 per sample
-
-                dist_l = torch.mean((cost * plan).sum(dim=(-1, -2)))
-
-                per_slice_distances.append(dist_l)
-
-
-            per_slice_distances = torch.stack(per_slice_distances)#.to(X.device)
-        
-        else: #Parallel = true
-            
-            L      = self.num_projections
-
-            #Flatten slices to one big batch of size B·L
-            x_flat = sliced_X.permute(0,2,1).reshape(B*L, N)  # [B·L×N]
-            r_flat = Rslices.permute(0,2,1).reshape(B*L, M)   # [B·L×N]
-
-            #Softsort
-            ss_x_flat = self.softsort(x_flat)  # [B·L×N×N]
-            ss_r_flat = self.softsort(r_flat)  # [B·L×NxN]
-
-            #BL transport plans (B per slice); [B·L×N×N] * [B·L×N×N] -> [B·L×N×N]
-            plans_flat = torch.matmul(ss_x_flat.transpose(1,2), ss_r_flat) / N
-
-            #Expand cost and compute SWGG per slice averaged across batch
-            cost_exp     = cost.unsqueeze(1).expand(-1, L, -1, -1)        # [B×L×N×N]
-            cost_flat    = cost_exp.reshape(B*L, N, N)                   # [B·L×N×N]
-
-            dist_flat    = (cost_flat * plans_flat).sum(dim=(-1,-2))     # [B·L]
-            per_slice_distances    = dist_flat.view(B, L).mean(dim=0)    # [L]
-
-        return embeddings, per_slice_distances
-
+        return embeddings
 
     def get_slice(self, X):
-        '''
-        Slices samples from distribution X~P_X
-        Input:
-            X:  B x N x dn tensor, containing a batch of B sets, each containing N samples in a dn-dimensional space
-        '''
-        return self.theta(X)
+            '''
+            Slices samples from distribution X~P_X
+            Input:
+                X:  B x N x dn tensor, containing a batch of B sets, each containing N samples in a dn-dimensional space
+            '''
+            return self.theta(X)
 

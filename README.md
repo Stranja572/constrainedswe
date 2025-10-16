@@ -71,7 +71,7 @@ The hyperparameters, such as the number of points in the reference set and the p
 python run_scl.py --config config/scl_esm2.yaml --pooling swe --num-ref-points 100 --target-model-type esm2_t6_8M_UR50D
 ```
 
-**NOTE:** The first training epoch might take longer than usual because it creates all the required interpolation matrices for SWE corresponding to different seequence lengths in the dataset. Once that is done, the following epochs will be much faster.
+**NOTE:** The first training epoch might take longer than usual because it creates all the required interpolation matrices for SWE corresponding to different sequence lengths in the dataset. Once that is done, the following epochs will be much faster.
     
 
 

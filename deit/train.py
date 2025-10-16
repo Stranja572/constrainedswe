@@ -27,7 +27,8 @@ def train_and_evaluate(args, model, train_loader, val_loader, test_loader):
        optimizer = Adam(model.classifier.parameters(), lr=args.primal_lr)
 
     #Lower L -> less weights -> takes shorter to converge -> decrease learning rate more quickly (ignore for fairness)
-    step_size=60
+    step_size=60 #for 80 epochs
+    #step_size=80 #for 110 epochs
     scheduler = StepLR(optimizer, step_size=step_size, gamma=0.1)
     
     print(f"Step size: {step_size}")
@@ -86,7 +87,7 @@ def train_and_evaluate(args, model, train_loader, val_loader, test_loader):
                         optimizer.step()
 
                     # Metrics
-                    top1 = (logits.argmax(dim=1) == y).float().mean().item() 
+                    top1 = (logits.argmax(dim=1) == y).float().mean().item()  #dividing by batch size with mean then multiplying again for like zero reason
                     _, preds5 = logits.topk(5, dim=1) #indices of top 5 ([B, 5])
                     top5 = (preds5 == y.view(-1, 1)).any(dim=1).float().mean().item() #comparing with [B, 1] tensor to see if the label is in any of those 5 indices; avg for the batch
 
