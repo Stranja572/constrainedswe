@@ -9,8 +9,6 @@ from model import ConstrainedDeiT
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    #parser.add_argument("--    #parser.add_argument("--data_dir", type=str, default = "/hpc/group/naderilab/darian/ConstrainedSWE/deit/tiny-imagenet/tiny-imagenet-200") is this correct?
-    #default = "/hpc/group/naderilab/darian/ConstrainedSWE/deit/tiny-imagenet-200")
     #Tiny-Imagenet or DomainNet clipart, both do 90-10 split to get train/val
     parser.add_argument("--dataset", type=str, default = "tinyimage")
     

@@ -25,11 +25,13 @@ wget http://cs231n.stanford.edu/tiny-imagenet-200.zip
 
 Then, run `organize_val.py` to reorganize the validation set (which is used as the test set) so that the images are in subdirectories of their respective classes. 
 
+If using DomainNet Clipart, download the clipart dataset and run `make_val_split.py` to get the corresponding train and validation data.
+
 Run the experiment with the following command from the `deit` directory:
 
 ```bash
 python -u main.py \
---data_dir <dataset_directory_path>
+--dataset <tinyimage/clipart>
 --classification <classification> \
 --batch_size <batch_size> \
 --epochs <epochs> \
@@ -53,9 +55,10 @@ Use the `download_ModelNet40.py.` and `ModelNet40_data.py` scripts to download a
 Then, run the following command from the `modelnet` directory:
 
 ```bash
-python train.py
+python -u train.py \
+--pooling <pooling_method>
+--projections <num_projections>
 ```
-
 
 ### Subcellular Localization with Protein Language Models (PLMs) 
 
