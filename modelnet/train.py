@@ -1,16 +1,4 @@
 #!/usr/bin/env python
-"""
-train.py — ModelNet40 experiment with either CSWE or GAP pooling.
-
-Examples
---------
-CSWE (constrained):   python train.py --seed 42           # default pooling=CSWE
-GAP (avg‑pool only):  python train.py --seed 42 --pooling GAP
-"""
-
-# --------------------------------------------------------------------------- #
-# Imports                                                                     #
-# --------------------------------------------------------------------------- #
 import argparse, os, random, time
 from collections import defaultdict
 
