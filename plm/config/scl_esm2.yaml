@@ -1,0 +1,38 @@
+# Logging and Paths
+wandb_proj: ESM2_SCL_CSWE # Weights and Biases project to log results to.
+wandb_save: True # Whether or not to log to Weights and Biases.
+log_file: ./logs/scratch_testing.log # Location of log file
+model_save_dir: ./best_models # Location to save best models
+data_cache_dir: ./datasets # Location of downloaded data (use `download_data.py`)
+
+# Misc
+device: 0 # CUDA device to use for training
+replicate: 123 # Random seed
+verbosity: 3 # Verbosity level for logging
+
+# Task and Dataset
+task: scl # Benchmark task
+
+# Model and Featurizers
+target_featurizer: ESMFeaturizer # Featurizer for protein sequences (see `featurizer` documentation)
+target_model_type: esm2_t33_650M_UR50D
+model_architecture: SCLPooling # Model architecture (see `models` documentation)
+num_classes: 10 # Number of classes
+pooling: "swe" # Pooling operation to be used for target embeddings - one of "avg", "max", "topk", "light_attn", "swe"
+num_ref_points: 100 # Number of points in the reference set (only for swe pooling; ignored for other pooling methods)
+num_slices: 32 # number of SWE slices
+dual_lr: 0.01 # dual learning rate
+eps: 5 # SWGG constraint upper bound
+alpha_lapsum: 1 # lapsum's alpha
+tau_aggregation: 1 # aggregation temperature
+
+# Training
+epochs: 50 # Number of epochs to train for
+batch_size: 32 # Size of batch for binary data set
+shuffle: True # Whether to shuffle training data before batching
+num_workers: 0 # Number of workers for PyTorch DataLoader
+every_n_val: 1 # How often to run validation during training (epochs)
+
+## Learning Rate
+lr: 1e-4 # Learning rate for binary training
+lr_t0: 10 # With annealing, reset learning rate to initial value after this many epochs for binary traniing

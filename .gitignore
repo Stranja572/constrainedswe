@@ -1,0 +1,4 @@
+__pycache__
+deit/run
+.DS_Store
+otherpoolings/
